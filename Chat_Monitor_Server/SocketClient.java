@@ -75,7 +75,7 @@ public class SocketClient {
         Scanner scanner = new Scanner(System.in);
         System.out.println("Enter your username");
         String userName = scanner.nextLine();
-        Socket socket = new Socket("localhost", 8080);
+        Socket socket = new Socket("localhost", Integer.parseInt(args[0]));
         SocketClient socketClient = new SocketClient(socket, userName);
         socketClient.listenMessage();
         socketClient.sendMessage();

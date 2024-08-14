@@ -22,6 +22,7 @@ public class ClientHandler implements Runnable {
             this.bufferedReader = new BufferedReader(new InputStreamReader(socket.getInputStream()));
             this.clientUsername = bufferedReader.readLine();
             clientHandlers.add(this);
+            System.out.println(clientHandlers.toString());
             broadCastMessage("SERVER: " + this.clientUsername + " joined");
         } catch (IOException e) {
             closeEverything(socket, bufferedReader, bufferedWriter);
@@ -46,7 +47,8 @@ public class ClientHandler implements Runnable {
     public void broadCastMessage(String messageToSend){
         for(ClientHandler client: clientHandlers){
             try {
-                if(!client.clientUsername.equals(clientUsername)){
+                System.out.println("MY PORT: " + this.socket.getLocalPort() + " TARGET PORT: " + client.socket.getLocalPort());
+                if(!client.clientUsername.equals(clientUsername) && this.socket.getLocalPort() == client.socket.getLocalPort()){
                     client.bufferedWriter.write(messageToSend);
                     client.bufferedWriter.newLine();
                     client.bufferedWriter.flush();
