@@ -3,60 +3,39 @@ import java.net.*;
 
 public class SocketListener {
 
-    public SocketListener(){}
+    private ServerSocket serverSocket;
 
-    public static void main(String[] args) {
-        int port1 = 12345;
-        int port2 = 12346;
+    SocketListener(ServerSocket serverSocket){
+        this.serverSocket = serverSocket;
+    }
 
-        ServerSocket server1;
-        ServerSocket server2;
+    public void startServer() {
         try {
-
-            server1 = new ServerSocket(port1);
-            server2 = new ServerSocket(port2);
-
-            new Thread(() -> chatSession(server1)).start();
-            new Thread(() -> chatSession(server2)).start();
-
-        } catch (IOException e) {
-
-            e.printStackTrace();
-
-        }
-
-        
-    }
-
-
-    private static void chatSession(ServerSocket session){
-        System.out.println("Client 2 connected chat ready ");
-        while (true) {
-            try (Socket socket = session.accept()) {
-                System.out.println("New client connected" + socket.getInetAddress());
-
-                InputStream input = socket.getInputStream();
-                BufferedReader reader = new BufferedReader(new InputStreamReader(input));
-
-                OutputStream output = socket.getOutputStream();
-                PrintWriter writer = new PrintWriter(output, true);
-
-                String text;
-
-                while ((text = reader.readLine()) != null) {
-                    System.out.println("Received from client: " + text);
-                    writer.println("Echo: " + text);
-
-                    if ("bye".equalsIgnoreCase(text)) {
-                        System.out.println("Client disconnected.");
-                        break;
-                    }
-                }
-            } catch (IOException e) {
-                System.out.println("Client error: " + e.getMessage());
-                e.printStackTrace();
+            while (!serverSocket.isClosed()) {
+                Socket socket = serverSocket.accept();
+                System.out.println("Client connectec");
+                ClientHandler clientHandler = new ClientHandler(socket);
+                Thread thred = new Thread(clientHandler);
+                thred.start();
             }
+        } catch (IOException ex) {
+            System.out.println("Server exception: " + ex.getMessage());
+            ex.printStackTrace();
         }
     }
 
+    public void closeServerSocket(){
+        try {
+            serverSocket.close();
+        } catch (IOException ex) {
+            ex.printStackTrace();
+        }
+    }
+
+    public static void main(String[] args) throws IOException {
+        ServerSocket serverSocket = new ServerSocket(8080);
+        SocketListener socketListener = new SocketListener(serverSocket);
+        socketListener.startServer();
+    }
+    
 }

@@ -3,40 +3,82 @@ import java.net.*;
 import java.util.Scanner;
 
 public class SocketClient {
-    public static void main(String[] args) {
-        String hostname = "localhost";  // Server's hostname
-        int port = Integer.parseInt(args[0]);               // Server's port number
 
-        try (Socket socket = new Socket(hostname, port)) {
-            // Get input and output streams
-            InputStream input = socket.getInputStream();
-            BufferedReader reader = new BufferedReader(new InputStreamReader(input));
+    private Socket socket;
+    private BufferedReader bufferedReader;
+    private BufferedWriter bufferedWriter;
+    private String userName;
 
-            OutputStream output = socket.getOutputStream();
-            PrintWriter writer = new PrintWriter(output, true);
-
-            // Read user input from the console
-
-            String message = "";
-            Scanner userInput;
-
-            System.out.println("Connected to the server. Type your messages:");
-            do {
-                userInput = new Scanner(System.in);
-                if(userInput.hasNext()){
-                    message = userInput.nextLine();
-                    System.out.println("Message to send" + message);
-                    writer.println(message);   // Send message to the server
-                    System.out.println("Sent to socket");
-                }
-                String response = reader.readLine();  // Read server's response
-                System.out.println(response);
-            } while (!"bye".equalsIgnoreCase(message));
-            userInput.close();
-        } catch (UnknownHostException ex) {
-            System.out.println("Server not found: " + ex.getMessage());
-        } catch (IOException ex) {
-            System.out.println("I/O error: " + ex.getMessage());
+    public SocketClient(Socket socket, String userName) {
+        try {
+            this.socket = socket;
+            this.bufferedWriter = new BufferedWriter(new OutputStreamWriter(socket.getOutputStream()));
+            this.bufferedReader = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+            this.userName = userName;
+        } catch (IOException e) {
+            closeEverything(socket, bufferedReader, bufferedWriter);
         }
     }
+
+    public void sendMessage(){
+        try {
+            bufferedWriter.write(userName);
+            bufferedWriter.newLine();
+            bufferedWriter.flush();
+
+            Scanner scanner = new Scanner(System.in);
+            while(socket.isConnected()){
+                String message = scanner.nextLine();
+                bufferedWriter.write(message);
+                bufferedWriter.newLine();
+                bufferedWriter.flush();
+            }
+        } catch (IOException e) {
+            closeEverything(socket, bufferedReader, bufferedWriter);
+        }
+    }
+
+    public void listenMessage(){
+        new Thread(new Runnable() {
+            @Override
+            public void run(){
+                String messageFromChat;
+                while(socket.isConnected()){
+                    try {
+                        messageFromChat = bufferedReader.readLine();
+                        System.out.println(messageFromChat);
+                    } catch (IOException e) {
+                        closeEverything(socket, bufferedReader, bufferedWriter);
+                    }
+                }
+            }
+        }).start();
+    }
+
+    public void closeEverything(Socket socket, BufferedReader bufferedReader, BufferedWriter bufferedWriter){
+        try {
+            if(bufferedReader != null){
+                bufferedReader.close();
+            }
+            if(bufferedWriter != null){
+                bufferedWriter.close();
+            }
+            if(socket != null){
+                socket.close();
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    public static void main(String[] args) throws IOException {
+        Scanner scanner = new Scanner(System.in);
+        System.out.println("Enter your username");
+        String userName = scanner.nextLine();
+        Socket socket = new Socket("localhost", 8080);
+        SocketClient socketClient = new SocketClient(socket, userName);
+        socketClient.listenMessage();
+        socketClient.sendMessage();
+    }
+
 }
