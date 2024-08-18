@@ -1,5 +1,4 @@
 import java.io.*;
-import java.lang.management.ThreadInfo;
 import java.net.*;
 
 public class SocketListener {
@@ -21,6 +20,7 @@ public class SocketListener {
             }
         } catch (IOException ex) {
             System.out.println("Server exception: " + ex.getMessage());
+            closeServerSocket();
             ex.printStackTrace();
         }
     }
@@ -34,15 +34,19 @@ public class SocketListener {
     }
 
     public static void main(String[] args) throws IOException {
+
         ServerSocket serverSocket = new ServerSocket(7070);
         ServerSocket serverSocket2 = new ServerSocket(8080);
         ServerSocket serverSocket3 = new ServerSocket(9090);
+        
         SocketListener socketListener = new SocketListener(serverSocket);
         SocketListener socketListener2 = new SocketListener(serverSocket2);
         SocketListener socketListener3 = new SocketListener(serverSocket3);
+        
         new Thread(socketListener::startServer).start();
         new Thread(socketListener2::startServer).start();
         new Thread(socketListener3::startServer).start();
+    
     }
     
 }

@@ -1,15 +1,21 @@
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.net.Socket;
+import java.nio.file.Files;
+import java.io.File;
+import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
+import java.util.concurrent.Semaphore;
 
 public class ClientHandler implements Runnable {
 
     public static ArrayList<ClientHandler> clientHandlers = new ArrayList<>();
+    private Semaphore semaphore = new Semaphore(1);
     private Socket socket;
     private BufferedReader bufferedReader;
     private BufferedWriter bufferedWriter;
@@ -45,6 +51,15 @@ public class ClientHandler implements Runnable {
     }
 
     public void broadCastMessage(String messageToSend){
+        
+        try{
+            semaphore.acquire();
+            storeLogs(messageToSend + "\n");
+            semaphore.release();
+        }catch(InterruptedException ex){
+            ex.printStackTrace();
+        }
+
         for(ClientHandler client: clientHandlers){
             try {
                 System.out.println("MY PORT: " + this.socket.getLocalPort() + " TARGET PORT: " + client.socket.getLocalPort());
@@ -77,6 +92,16 @@ public class ClientHandler implements Runnable {
                 socket.close();
             }
         } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    private void storeLogs(String message){
+        System.out.println("Storing logs");
+        File logs = new File("logs.txt");
+        try{
+            Files.write(logs.toPath(), message.getBytes(), StandardOpenOption.APPEND);
+        }catch(IOException e){
             e.printStackTrace();
         }
     }
